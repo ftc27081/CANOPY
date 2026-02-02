@@ -22,10 +22,10 @@ public class DepotZoneBlue extends LinearOpMode {
     ElapsedTime timer = new ElapsedTime();
     public static double p = 0.002;
     public static double i = 0;
-    public static double d = 0.000102;
+    public static double d = 0;
     public static double f = 0.00043;
     boolean gateNotOpen = true;
-    public static double targetValue = 1250;
+    public static double targetValue = 1210;
 
     private ElapsedTime runtime = new ElapsedTime();
 
@@ -75,6 +75,7 @@ public class DepotZoneBlue extends LinearOpMode {
                }
            }
             stopShooterMotor();
+            sleep(5000);
             encoderStrafe(0.5,-22,5); // move out of zone after shooting
         }
     }

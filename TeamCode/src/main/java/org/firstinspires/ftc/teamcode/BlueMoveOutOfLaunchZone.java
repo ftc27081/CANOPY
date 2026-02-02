@@ -61,24 +61,8 @@ public class BlueMoveOutOfLaunchZone extends LinearOpMode {
 
         waitForStart();
         if (opModeIsActive()) {
-            encoderDrive(0.25,  75, 5); // move out of zone after shooting
-            encoderTurn(0.5, -50, 3);
-            sleep(3000);
-            encoderStrafe(0.5, 6,5);
-
-            ElapsedTime gateControl= new ElapsedTime();
-            while(turnonshooter == 1) {
-                wheelVelocity(outakeMotor,targetValue);
-                if(gateControl.seconds() > 5 && gateNotOpen) {
-                    openGate();
-                }
-                if(gateControl.seconds() > 9) {
-                    closeGate();
-                    turnonshooter = 0;
-                }
-            }
-            stopShooterMotor();
-            encoderStrafe(0.5,-22,5); // move out of zone after shooting
+            sleep(25000);
+            encoderDrive(0.25,  35, 5);
         }
     }
 

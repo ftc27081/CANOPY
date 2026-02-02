@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.MechanumDriveCode.p;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -15,24 +16,30 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class LaunchZoneRed extends LinearOpMode {
 
     private DcMotorEx flMotor, frMotor, blMotor, brMotor,outakeMotor;
-    private Servo artifactGate;
-    double lastError = 0;
+    private Servo artifactGate,rampControl;
 
+    double lastError = 0;
+    static final double TICKS_PER_REV = 537.6;  // For 312 RPM Yellow Jackets
+    static final double WHEEL_DIAMETER_INCHES = 4.0; // adjust for your wheels
+
+    static final double COUNTS_PER_INCH = TICKS_PER_REV / (WHEEL_DIAMETER_INCHES * Math.PI);
+
+    static final double TRACK_WIDTH_INCHES = 17.0; // distance between left & right wheels (center-to-center)
+    static final double COUNTS_PER_DEGREE =
+            (Math.PI * TRACK_WIDTH_INCHES * COUNTS_PER_INCH) / 360.0;
     private int turnonshooter =0;
     ElapsedTime timer = new ElapsedTime();
-    public static double p = 0.002;
-    public static double i = 0;
-    public static double d = 0.000102;
+    public static double p = 0.00063;
+    public static double i = 0.0000000000014;
+    public static double d = 0.00000041;
     public static double f = 0.00043;
     boolean gateNotOpen = true;
-    public static double targetValue = 5800;
+    public static double targetValue = 1625;
 
     private ElapsedTime runtime = new ElapsedTime();
 
     // Motor ticks per revolution
-    static final double TICKS_PER_REV = 537.6;  // For 312 RPM Yellow Jackets
-    static final double WHEEL_DIAMETER_INCHES = 4.0; // adjust for your wheels
-    static final double COUNTS_PER_INCH = TICKS_PER_REV / (WHEEL_DIAMETER_INCHES * Math.PI);
+
 
     @Override
     public void runOpMode() {
@@ -63,7 +70,8 @@ public class LaunchZoneRed extends LinearOpMode {
         ElapsedTime gateControl= new ElapsedTime();
 
         if (opModeIsActive()) {
-            encoderDrive(0.25,  1, 5); // Drive backward 26 inches at 50% power, 5 second timeout
+            encoderDrive(0.25,  3, 5); // Drive backward 26 inches at 50% power, 5 second timeout
+            encoderTurn(0.25,40,5);
             while(turnonshooter == 1){
                 wheelVelocity(outakeMotor,targetValue);
                 if(gateControl.seconds() > 5 && gateNotOpen) {
@@ -74,10 +82,12 @@ public class LaunchZoneRed extends LinearOpMode {
                     turnonshooter = 0;
                 }
             }
-            stopShooterMotor();
+            sleep(5000);
             encoderDrive(0.25,  15, 5); // move out of zone after shooting
         }
     }
+
+
 
     private void resetEncoders() {
         DcMotor[] motors = {flMotor, frMotor, blMotor, brMotor};
@@ -133,6 +143,42 @@ public class LaunchZoneRed extends LinearOpMode {
         brMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
+
+    private void encoderTurn(double speed, double degrees, double timeoutS) {
+        // degrees: + = turn left (CCW), - = turn right (CW)
+        int turnCounts = (int) Math.round(degrees * COUNTS_PER_DEGREE);
+
+        int flTarget = flMotor.getCurrentPosition() + turnCounts;
+        int blTarget = blMotor.getCurrentPosition() + turnCounts;
+        int frTarget = frMotor.getCurrentPosition() - turnCounts;
+        int brTarget = brMotor.getCurrentPosition() - turnCounts;
+
+        flMotor.setTargetPosition(flTarget);
+        blMotor.setTargetPosition(blTarget);
+        frMotor.setTargetPosition(frTarget);
+        brMotor.setTargetPosition(brTarget);
+
+        flMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        blMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        brMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        speed = Math.abs(speed); // keep speed positive; direction comes from targets
+        flMotor.setPower(speed);
+        frMotor.setPower(speed);
+        blMotor.setPower(speed);
+        brMotor.setPower(speed);
+
+        runtime.reset();
+        while (opModeIsActive()
+                && runtime.seconds() < timeoutS
+                && (flMotor.isBusy() && frMotor.isBusy() && blMotor.isBusy() && brMotor.isBusy())) {
+
+            telemetry.addData("Turning", "%.1f deg", degrees);
+            telemetry.addData("Targets", "FL:%d FR:%d BL:%d BR:%d", flTarget, frTarget, blTarget, brTarget);
+            telemetry.update();
+        }
+    }
     private void encoderDrive(double speed, double inches, double timeoutS) {
         int newLeftFrontTarget = flMotor.getCurrentPosition() + (int)(inches * COUNTS_PER_INCH);
         int newRightFrontTarget = frMotor.getCurrentPosition() + (int)(inches * COUNTS_PER_INCH);
