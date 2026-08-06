@@ -39,8 +39,8 @@ public class TwoWheelDrive extends LinearOpMode {
     }
 
     public void drive(){
+        double turn = gamepad1.left_stick_x;
 
-        double turn = gamepad1.right_stick_x;
 
         double leftPower  = -gamepad1.left_stick_y + turn;
         double rightPower = -gamepad1.left_stick_y - turn;
