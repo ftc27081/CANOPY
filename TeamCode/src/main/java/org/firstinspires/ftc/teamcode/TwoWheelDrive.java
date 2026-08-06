@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 
 @TeleOp(name="Basic Drive")
-public class twoWheelDrive extends LinearOpMode {
+public class TwoWheelDrive extends LinearOpMode {
 
 
    private DcMotor frontRight;
